@@ -9,7 +9,7 @@ import (
 	"remote-pull/pkg/ssh"
 )
 
-func TransferImage(imageName, remoteServer string) error {
+func TransferImage(imageName, remoteServer string, skipPull bool) error {
 	// Split remote server into user and host
 	parts := strings.Split(remoteServer, "@")
 	if len(parts) != 2 {
@@ -31,9 +31,13 @@ func TransferImage(imageName, remoteServer string) error {
 	}
 	fmt.Printf("[PROCEEDING] Image %s not found on %s - proceeding with transfer\n", imageName, remoteServer)
 
-	// Pull image locally if needed
-	if err := pullLocalImage(imageName); err != nil {
-		return fmt.Errorf("error pulling local image: %v", err)
+	// Pull image locally if needed and not skipped
+	if !skipPull {
+		if err := pullLocalImage(imageName); err != nil {
+			return fmt.Errorf("error pulling local image: %v", err)
+		}
+	} else {
+		fmt.Printf("[SKIPPING] Local pull for %s as requested\n", imageName)
 	}
 
 	// Transfer image to remote

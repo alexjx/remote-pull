@@ -7,6 +7,7 @@ A CLI tool to securely transfer Docker images from local to remote servers via S
 - Basic Docker image transfer using SSH
 - Automatic image existence checking to avoid redundant transfers
 - Simple progress tracking during transfer
+- Option to skip local image pulling when image already exists locally
 
 ## Installation
 
@@ -36,7 +37,12 @@ go install github.com/xinj/remote-pull/cmd/docker-transfer@latest
 
 Basic syntax:
 ```bash
-remote-pull IMAGE_NAME USER@HOST [OPTIONS]
+remote-pull [OPTIONS] IMAGE_NAME USER@HOST
+```
+
+### Options
+```
+--skip-pull     Skip pulling the image locally before transfer
 ```
 
 ### Examples
@@ -44,6 +50,11 @@ remote-pull IMAGE_NAME USER@HOST [OPTIONS]
 Basic transfer:
 ```bash
 remote-pull nginx:latest user@example.com
+```
+
+Transfer without pulling locally first:
+```bash
+remote-pull --skip-pull nginx:latest user@example.com
 ```
 
 ## Technical Details
