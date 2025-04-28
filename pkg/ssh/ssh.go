@@ -208,18 +208,19 @@ func CopyAndRun(src, command, user, host string) error {
 	}
 	defer client.Close()
 
-	session, err := client.NewSession()
+	// Create a session for file transfer
+	transferSession, err := client.NewSession()
 	if err != nil {
-		return fmt.Errorf("failed to create session: %v", err)
+		return fmt.Errorf("failed to create transfer session: %v", err)
 	}
-	defer session.Close()
+	defer transferSession.Close()
 
 	// Transfer the file with progress
 	transferDone := make(chan error)
 	go func() {
 		defer close(transferDone)
 
-		w, err := session.StdinPipe()
+		w, err := transferSession.StdinPipe()
 		if err != nil {
 			transferDone <- err
 			return
@@ -273,10 +274,10 @@ func CopyAndRun(src, command, user, host string) error {
 	}()
 
 	// Execute the SCP command to receive the file
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
+	transferSession.Stdout = os.Stdout
+	transferSession.Stderr = os.Stderr
 
-	if err := session.Run("/usr/bin/scp -qt /tmp"); err != nil {
+	if err := transferSession.Run("/usr/bin/scp -qt /tmp"); err != nil {
 		return fmt.Errorf("scp transfer failed: %v", err)
 	}
 
@@ -285,8 +286,20 @@ func CopyAndRun(src, command, user, host string) error {
 		return fmt.Errorf("file copy failed: %v", err)
 	}
 
-	// Execute the final command
-	if err := session.Run(command); err != nil {
+	// Create a new session for executing the command
+	commandSession, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("failed to create command session: %v", err)
+	}
+	defer commandSession.Close()
+
+	// Set up output for the command
+	commandSession.Stdout = os.Stdout
+	commandSession.Stderr = os.Stderr
+
+	// Execute the final command in the new session
+	fmt.Printf("Running command on remote server: %s\n", command)
+	if err := commandSession.Run(command); err != nil {
 		return fmt.Errorf("command failed: %v", err)
 	}
 	return nil
